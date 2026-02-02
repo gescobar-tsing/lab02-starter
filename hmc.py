@@ -49,8 +49,12 @@ def hmc_step(key, theta, log_prob_fn, epsilon, L):
         theta_new: New position (proposal if accepted, current if rejected)
         accepted: Boolean
     """
+    # Split key for independent random numbers (one for momentum, one for accept/reject)
     key1, key2 = random.split(key)
 
     # TODO: Implement HMC step
+    # Hints for JAX random:
+    #   random.normal(key1, shape=theta.shape)  # sample momentum
+    #   random.uniform(key2)                    # sample for accept/reject
 
     ...
