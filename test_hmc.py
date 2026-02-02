@@ -6,7 +6,6 @@ These tests verify the student's implementation of leapfrog and hmc_step.
 
 import jax.numpy as jnp
 import jax.random as jr
-from jax import grad
 
 from hmc import leapfrog, hmc_step
 
@@ -40,8 +39,6 @@ class TestLeapfrog:
         def simple_log_prob(theta):
             return -0.5 * jnp.sum(theta**2)
 
-        simple_grad = grad(simple_log_prob)
-
         theta0 = jnp.array([1.0, 0.5])
         rho0 = jnp.array([0.5, -0.3])
 
@@ -49,7 +46,7 @@ class TestLeapfrog:
         H0 = -simple_log_prob(theta0) + 0.5 * jnp.sum(rho0**2)
 
         # Run leapfrog
-        theta_new, rho_new = leapfrog(theta0, rho0, simple_grad, epsilon=0.1, L=50)
+        theta_new, rho_new = leapfrog(theta0, rho0, simple_log_prob, epsilon=0.1, L=50)
 
         # Final energy
         H1 = -simple_log_prob(theta_new) + 0.5 * jnp.sum(rho_new**2)
@@ -63,12 +60,10 @@ class TestLeapfrog:
         def simple_log_prob(theta):
             return -0.5 * jnp.sum(theta**2)
 
-        simple_grad = grad(simple_log_prob)
-
         theta0 = jnp.array([1.0, 0.5])
         rho0 = jnp.array([0.5, -0.3])
 
-        theta_new, rho_new = leapfrog(theta0, rho0, simple_grad, epsilon=0.1, L=10)
+        theta_new, rho_new = leapfrog(theta0, rho0, simple_log_prob, epsilon=0.1, L=10)
 
         # Position should have changed
         assert not jnp.allclose(theta0, theta_new), "Leapfrog did not move position"
@@ -79,16 +74,14 @@ class TestLeapfrog:
         def simple_log_prob(theta):
             return -0.5 * jnp.sum(theta**2)
 
-        simple_grad = grad(simple_log_prob)
-
         theta0 = jnp.array([1.0, 0.5])
         rho0 = jnp.array([0.5, -0.3])
 
         # Forward
-        theta1, rho1 = leapfrog(theta0, rho0, simple_grad, epsilon=0.1, L=20)
+        theta1, rho1 = leapfrog(theta0, rho0, simple_log_prob, epsilon=0.1, L=20)
 
         # Backward (negate momentum)
-        theta2, rho2 = leapfrog(theta1, -rho1, simple_grad, epsilon=0.1, L=20)
+        theta2, rho2 = leapfrog(theta1, -rho1, simple_log_prob, epsilon=0.1, L=20)
 
         # Should return to start
         assert jnp.allclose(theta0, theta2, atol=1e-5), "Leapfrog is not reversible"

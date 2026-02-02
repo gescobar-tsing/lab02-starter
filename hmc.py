@@ -12,7 +12,7 @@ import jax.numpy as jnp
 from jax import grad, random
 
 
-def leapfrog(theta, rho, grad_log_prob_fn, epsilon, L):
+def leapfrog(theta, rho, log_prob_fn, epsilon, L):
     """Run L steps of leapfrog integration.
 
     The leapfrog integrator simulates Hamiltonian dynamics, which conserves
@@ -24,7 +24,7 @@ def leapfrog(theta, rho, grad_log_prob_fn, epsilon, L):
     Args:
         theta: Initial position, shape (D,)
         rho: Initial momentum, shape (D,)
-        grad_log_prob_fn: Function that returns gradient of log prob
+        log_prob_fn: Function that returns log probability
         epsilon: Step size
         L: Number of leapfrog steps
 
@@ -33,13 +33,15 @@ def leapfrog(theta, rho, grad_log_prob_fn, epsilon, L):
         rho_new: Final momentum, shape (D,)
     """
     # TODO: Implement the leapfrog integrator
-    # Run L steps of the leapfrog update using a for loop
     #
-    # Hint: The half-step / full-step / half-step pattern means:
+    # Hint 1: You need the gradient of log_prob_fn. Use jax.grad to get it:
+    #         grad_log_prob = grad(log_prob_fn)
+    #
+    # Hint 2: The half-step / full-step / half-step pattern means:
     #   for each step:
-    #       rho = rho + (epsilon/2) * grad_log_prob_fn(theta)   # half step momentum
-    #       theta = theta + epsilon * rho                        # full step position
-    #       rho = rho + (epsilon/2) * grad_log_prob_fn(theta)   # half step momentum
+    #       rho = rho + (epsilon/2) * grad_log_prob(theta)   # half step momentum
+    #       theta = theta + epsilon * rho                     # full step position
+    #       rho = rho + (epsilon/2) * grad_log_prob(theta)   # half step momentum
 
     theta_new = ...
     rho_new = ...
@@ -71,9 +73,6 @@ def hmc_step(key, theta, log_prob_fn, epsilon, L):
     # Split the key: key1 for sampling momentum, key2 for accept/reject
     # JAX requires splitting keys to get independent random numbers
     key1, key2 = random.split(key)
-
-    # Compute gradient function from log_prob_fn
-    grad_log_prob_fn = grad(log_prob_fn)
 
     # TODO: Implement HMC step
     #
