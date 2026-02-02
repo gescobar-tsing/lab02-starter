@@ -52,21 +52,31 @@ def test_hmc_returns_correct_shape():
     assert theta_new.shape == theta.shape, f"Wrong shape: {theta_new.shape}"
 
 
-def test_hmc_produces_samples():
-    """HMC should produce varying samples over multiple steps."""
+def test_hmc_samples_correct_mean():
+    """HMC should produce samples with correct mean on a simple Gaussian."""
+    from jax import jit, lax
 
-    def simple_log_prob(theta):
-        return -0.5 * jnp.sum(theta**2)
+    true_mean = jnp.array([1.0, -0.5])
 
-    key = jr.PRNGKey(42)
-    theta = jnp.zeros(2)
-    samples = [theta]
+    def gaussian_log_prob(theta):
+        return -0.5 * jnp.sum((theta - true_mean) ** 2)
 
-    for i in range(20):
-        key, subkey = jr.split(key)
-        theta, _ = hmc_step(subkey, theta, simple_log_prob, epsilon=0.2, L=10)
-        samples.append(theta)
+    key = jr.PRNGKey(123)
+    keys = jr.split(key, 2000)
+    theta_init = jnp.zeros(2)
 
-    samples = jnp.stack(samples)
-    # Check that samples have some variance (not stuck)
-    assert jnp.std(samples) > 0.1, "HMC appears to be stuck"
+    @jit
+    def jit_hmc_step(key, theta):
+        return hmc_step(key, theta, gaussian_log_prob, epsilon=0.2, L=10)
+
+    def scan_fn(theta, key):
+        new_theta, accepted = jit_hmc_step(key, theta)
+        return new_theta, new_theta
+
+    _, samples = lax.scan(scan_fn, theta_init, keys)
+
+    # Check mean (discard first 500 as burn-in)
+    sample_mean = samples[500:].mean(axis=0)
+    mean_error = jnp.max(jnp.abs(sample_mean - true_mean))
+
+    assert mean_error < 0.15, f"Sample mean {sample_mean} too far from true mean {true_mean}"
